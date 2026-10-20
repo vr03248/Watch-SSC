@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>SSC CHSL Giant Display Study Watch</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700;800&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+            digital: ['Chakra Petch', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Prevent layout shifting during second updates */
+    .tabular-digits {
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 5px;
+      height: 5px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(100, 116, 139, 0.4);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body class="bg-black text-slate-100 min-h-screen flex flex-col justify-between font-sans antialiased select-none p-3 sm:p-6 overflow-x-hidden">
+
+  <!-- TOP BAR: Status, Exam Badge & Quick Actions -->
+  <header class="w-full max-w-7xl mx-auto flex items-center justify-between pb-3 border-b border-slate-900">
+    <div class="flex items-center gap-2.5">
+      <div class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></div>
+      <div>
+        <h1 class="text-xs sm:text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
+          CHSL Study Watch
+          <span class="text-[9px] px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 font-mono">Tier 1</span>
+        </h1>
+      </div>
+    </div>
+
+    <!-- Active Schedule Slot Indicator -->
+    <div id="topSlotPill" class="px-3 py-1 rounded-full bg-slate-950 border border-slate-800 text-xs font-mono font-medium text-orange-400 flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse"></span>
+      <span id="topSlotText">Syncing Routine...</span>
+    </div>
+
+    <!-- Controls (Mute & Full Screen) -->
+    <div class="flex items-center gap-2">
+      <button id="soundToggleBtn" class="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 transition text-xs flex items-center gap-1.5 font-medium">
+        <i data-lucide="volume-2" id="soundIcon" class="w-3.5 h-3.5 text-emerald-400"></i>
+        <span class="hidden md:inline" id="soundStatusText">Sound On</span>
+      </button>
+
+      <button id="fullscreenToggleBtn" class="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white transition text-xs flex items-center gap-1.5 font-bold shadow-md shadow-orange-600/20">
+        <i data-lucide="maximize" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">Full Screen</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN CANVAS: MASSIVE SCALING NUMBERS -->
+  <main class="w-full max-w-7xl mx-auto flex-1 flex flex-col justify-center my-auto py-2">
+
+    <!-- TAB 1: WATCH (GIANT NUMBERS & STUDY HUD) -->
+    <div id="tabWatch" class="view-panel flex flex-col items-center justify-center space-y-4 sm:space-y-6">
+      
+      <!-- Date & Phase Badge -->
+      <div class="text-xs sm:text-sm font-mono tracking-widest uppercase text-slate-400 flex items-center gap-2">
+        <span id="dateDisplay">TUESDAY, 20 OCTOBER</span>
+        <span>•</span>
+        <span class="text-orange-400 font-bold">DAY 7 / 47</span>
+      </div>
+
+      <!-- HUGE DIGITAL NUMBERS (Dynamically scales with viewport) -->
+      <div class="w-full text-center flex items-center justify-center gap-2 sm:gap-4 my-auto">
+        <span id="giantTime" class="font-digital font-extrabold text-[22vw] sm:text-[18vw] md:text-[15vw] leading-none tracking-tight text-white tabular-digits whitespace-nowrap">
+          00:00
+        </span>
+        <div class="flex flex-col items-start justify-center gap-1">
+          <span id="giantSeconds" class="font-digital font-bold text-[7vw] sm:text-[5vw] md:text-[4vw] leading-none text-orange-500 tabular-digits">
+            00
+          </span>
+          <span id="giantAmPm" class="text-xs sm:text-base font-mono font-bold text-slate-400">
+            PM
+          </span>
+        </div>
+      </div>
+
+      <!-- Live Routine Status Card -->
+      <div class="w-full max-w-3xl bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800/80 rounded-2xl p-4 sm:p-5 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div class="space-y-1 text-center sm:text-left">
+          <div class="flex items-center justify-center sm:justify-start gap-2">
+            <span id="sessionStatusBadge" class="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
+              ACTIVE SESSION
+            </span>
+            <span class="text-xs text-slate-400 font-mono">Routine Target: 4h 15m</span>
+          </div>
+          <h2 id="sessionName" class="text-base sm:text-xl font-bold text-white">Evening Quant Core (Maths)</h2>
+          <p id="sessionTimeWindow" class="text-xs font-mono text-slate-400">6:30 PM – 8:30 PM (2 Hours Focus)</p>
+        </div>
+
+        <div class="text-center sm:text-right bg-slate-950/80 px-5 py-2.5 rounded-xl border border-slate-800 w-full sm:w-auto">
+          <span class="text-[10px] text-slate-400 uppercase font-semibold block" id="sessionTimeRemainingLabel">Time Remaining</span>
+          <span id="sessionCountdown" class="text-xl sm:text-2xl font-mono font-bold text-amber-400 tabular-digits">1h 45m</span>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Pill -->
+      <div class="flex flex-wrap items-center justify-center gap-3 text-xs font-mono text-slate-400">
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800">
+          <i data-lucide="target" class="w-4 h-4 text-orange-400"></i>
+          <span>Tier 1 Exam (30 Nov 2026):</span>
+          <strong id="examDaysCount" class="text-white font-bold">41 Days Left</strong>
+        </div>
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/60 border border-slate-800">
+          <i data-lucide="coffee" class="w-4 h-4 text-amber-400"></i>
+          <span>Tea &amp; Recharge:</span>
+          <strong class="text-slate-300">5:30 PM – 6:30 PM</strong>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: STOPWATCH (MASSIVE TIMER READOUT) -->
+    <div id="tabStopwatch" class="view-panel hidden flex-col items-center justify-center space-y-5">
+      
+      <!-- Preset Sprints -->
+      <div class="w-full max-w-xl flex items-center justify-center gap-2 flex-wrap text-xs font-mono">
+        <span class="text-slate-400 text-[11px] mr-1">Presets:</span>
+        <button class="preset-btn px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-orange-500 text-white font-semibold transition" data-sec="3600" data-name="60m Full Mock">
+          60m Mock
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-orange-500 text-amber-300 font-semibold transition" data-sec="840" data-name="14m Reasoning">
+          14m Reas
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-orange-500 text-emerald-300 font-semibold transition" data-sec="780" data-name="13m Sprint">
+          13m Sprint
+        </button>
+        <button class="preset-btn px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-orange-500 text-blue-300 font-semibold transition" data-sec="1500" data-name="25m Quant">
+          25m Quant
+        </button>
+      </div>
+
+      <!-- HUGE STOPWATCH NUMERALS -->
+      <div class="text-center w-full">
+        <span id="swModeName" class="text-xs font-mono uppercase tracking-widest text-slate-500 block mb-1">Free Stopwatch</span>
+        <div id="swTimerText" class="font-digital font-extrabold text-[18vw] sm:text-[14vw] md:text-[11vw] leading-none text-white tracking-tight tabular-digits whitespace-nowrap">
+          00:00.00
+        </div>
+        <div class="text-xs sm:text-sm font-mono text-slate-400 mt-3 flex items-center justify-center gap-4">
+          <span>Questions Done: <strong id="swQCount" class="text-orange-400 text-base">0</strong></span>
+          <span>•</span>
+          <span>Avg Pace: <strong id="swAvgPace" class="text-emerald-400 text-base">-- s/q</strong></span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-center gap-3 w-full max-w-md pt-2">
+        <button id="swStartBtn" class="flex-1 py-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/30 flex items-center justify-center gap-2 transition">
+          <i data-lucide="play" class="w-4 h-4"></i> Start
+        </button>
+        <button id="swLapBtn" disabled class="flex-1 py-4 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white font-bold text-sm disabled:opacity-40 flex items-center justify-center gap-2 transition">
+          <i data-lucide="flag" class="w-4 h-4"></i> +1 Question (Lap)
+        </button>
+        <button id="swResetBtn" class="px-5 py-4 rounded-2xl bg-slate-900 border border-slate-800 hover:bg-rose-950/40 hover:text-rose-400 text-slate-300 font-bold text-sm flex items-center justify-center transition">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <!-- Laps List -->
+      <div class="w-full max-w-md max-h-36 overflow-y-auto bg-slate-950 border border-slate-900 rounded-2xl p-3 text-xs font-mono space-y-1.5" id="swLapsList">
+        <div class="text-slate-500 text-center py-2">Tap "+1 Question" during your mock to log per-question pace.</div>
+      </div>
+
+    </div>
+
+    <!-- TAB 3: REMINDERS & ALARMS -->
+    <div id="tabReminders" class="view-panel hidden flex-col items-center justify-center space-y-5">
+      <div class="w-full max-w-xl flex items-center justify-between pb-2 border-b border-slate-900">
+        <div>
+          <h2 class="text-base font-bold text-white flex items-center gap-2">
+            <i data-lucide="bell" class="w-4 h-4 text-orange-400"></i> Study Session Reminders
+          </h2>
+          <p class="text-xs text-slate-400">Built-in audio alerts tailored to your teacher schedule</p>
+        </div>
+        <button id="openNewAlarmBtn" class="px-3 py-1.5 rounded-xl bg-orange-600 hover:bg-orange-500 text-white font-bold text-xs flex items-center gap-1 transition">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Alarm
+        </button>
+      </div>
+
+      <div class="w-full max-w-xl space-y-2.5 max-h-96 overflow-y-auto pr-1" id="alarmItemsContainer">
+        <!-- Rendered via JS -->
+      </div>
+    </div>
+
+    <!-- TAB 4: 47-DAY SYLLABUS -->
+    <div id="tabPlan" class="view-panel hidden flex-col items-center justify-center space-y-5">
+      <div class="w-full max-w-xl flex items-center justify-between">
+        <button id="planPrevBtn" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition">
+          <i data-lucide="chevron-left" class="w-5 h-5"></i>
+        </button>
+        <div class="text-center">
+          <span class="text-xs font-mono uppercase tracking-wider text-orange-400 block" id="planPhaseTitle">Phase 1: Foundations</span>
+          <h2 class="text-lg font-bold text-white" id="planDayTitle">Day 7 (20 Oct 2026)</h2>
+        </div>
+        <button id="planNextBtn" class="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:text-white transition">
+          <i data-lucide="chevron-right" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="w-full max-w-xl space-y-3" id="planSlotsContainer">
+        <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start justify-between gap-3">
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800">
+              AFTERNOON • 1:45 PM – 2:45 PM
+            </span>
+            <h3 class="text-sm font-semibold text-white" id="planSlot1Title">Analogy &amp; Classification Drills</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">1 Hour</span>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start justify-between gap-3">
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
+              EVENING QUANT • 6:30 PM – 8:30 PM
+            </span>
+            <h3 class="text-sm font-semibold text-white" id="planSlot2Title">Profit, Loss &amp; Marked Price (Part 2)</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">2 Hours</span>
+        </div>
+
+        <div class="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 flex items-start justify-between gap-3">
+          <div class="space-y-1">
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">
+              NIGHT WRAP • 9:30 PM – 10:45 PM
+            </span>
+            <h3 class="text-sm font-semibold text-white" id="planSlot3Title">Indus Valley Civilization &amp; Vedic Period</h3>
+          </div>
+          <span class="text-xs font-mono text-slate-400">1.25 Hours</span>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- BOTTOM SIMPLE NAVIGATION -->
+  <footer class="w-full max-w-xl mx-auto pt-3 border-t border-slate-900">
+    <nav class="flex items-center justify-around">
+      <button class="nav-btn active text-orange-400 flex flex-col items-center gap-1 text-xs font-semibold px-4 py-2 rounded-xl transition" data-target="tabWatch">
+        <i data-lucide="clock" class="w-5 h-5"></i>
+        <span>Watch</span>
+      </button>
+
+      <button class="nav-btn text-slate-400 hover:text-white flex flex-col items-center gap-1 text-xs font-semibold px-4 py-2 rounded-xl transition" data-target="tabStopwatch">
+        <i data-lucide="timer" class="w-5 h-5"></i>
+        <span>Stopwatch</span>
+      </button>
+
+      <button class="nav-btn text-slate-400 hover:text-white flex flex-col items-center gap-1 text-xs font-semibold px-4 py-2 rounded-xl transition" data-target="tabReminders">
+        <i data-lucide="bell" class="w-5 h-5"></i>
+        <span>Reminders</span>
+      </button>
+
+      <button class="nav-btn text-slate-400 hover:text-white flex flex-col items-center gap-1 text-xs font-semibold px-4 py-2 rounded-xl transition" data-target="tabPlan">
+        <i data-lucide="calendar" class="w-5 h-5"></i>
+        <span>Plan</span>
+      </button>
+    </nav>
+  </footer>
+
+  <!-- MODAL: ADD CUSTOM ALARM -->
+  <div id="newAlarmModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+      <div class="flex items-center justify-between">
+        <h3 class="text-sm font-bold text-white flex items-center gap-2">
+          <i data-lucide="bell-plus" class="w-4 h-4 text-orange-400"></i> Set Study Alarm
+        </h3>
+        <button id="closeAlarmModal" class="text-slate-400 hover:text-white">✕</button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div>
+          <label class="block text-slate-400 mb-1">Session / Topic Name:</label>
+          <input type="text" id="alarmTitleInput" placeholder="e.g. 50 Arithmetic Speed PYQs" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Alarm Time (HH:MM):</label>
+            <input type="time" id="alarmTimeInput" value="18:25" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Subject Category:</label>
+            <select id="alarmTagInput" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-orange-500">
+              <option value="QUAN">Quant (Maths)</option>
+              <option value="ENG">English</option>
+              <option value="REAS">Reasoning</option>
+              <option value="GK">General Awareness</option>
+              <option value="MOCK">Mock Test</option>
+              <option value="BREAK">Recharge Break</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-2">
+        <button id="cancelAlarmModal" class="px-3 py-1.5 text-xs text-slate-400 hover:text-white">Cancel</button>
+        <button id="saveAlarmBtn" class="px-5 py-2 text-xs font-bold bg-orange-600 hover:bg-orange-500 text-white rounded-xl shadow transition">Save Alarm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT CLOCK & LOGIC -->
+  <script>
+    const AudioEngine = {
+      ctx: null,
+      muted: false,
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (AudioContext) this.ctx = new AudioContext();
+        }
+      },
+      beep(freq = 880, duration = 0.08, type = 'sine') {
+        if (this.muted) return;
+        try {
+          this.init();
+          if (!this.ctx) return;
+          if (this.ctx.state === 'suspended') this.ctx.resume();
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = type;
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+          gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.0001, this.ctx.currentTime + duration);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start();
+          osc.stop(this.ctx.currentTime + duration);
+        } catch (e) {}
+      },
+      tick() { this.beep(1200, 0.02, 'triangle'); },
+      lap() { this.beep(980, 0.06, 'sine'); },
+      alarm() {
+        if (this.muted) return;
+        this.beep(880, 0.2, 'sine');
+        setTimeout(() => this.beep(1174, 0.3, 'triangle'), 180);
+      }
+    };
+
+    const EXAM_DATE = new Date('2026-11-30T09:00:00+05:30');
+    
+    const ROUTINE_SLOTS = [
+      { name: "Afternoon Focus", startH: 13, startM: 45, endH: 14, endM: 45, tag: "ENG/REAS", window: "1:45 PM – 2:45 PM (1h)" },
+      { name: "Tea & Mind Recharge", startH: 17, startM: 30, endH: 18, endM: 30, tag: "RECHARGE", window: "5:30 PM – 6:30 PM (1h Rest)" },
+      { name: "Evening Quant Core", startH: 18, startM: 30, endH: 20, endM: 30, tag: "QUAN", window: "6:30 PM – 8:30 PM (2h Core)" },
+      { name: "Night Wrap & GK", startH: 21, startM: 30, endH: 22, endM: 45, tag: "GK & CA", window: "9:30 PM – 10:45 PM (1.25h)" }
+    ];
+
+    let alarms = [
+      { id: 1, time: "13:40", title: "5m Alert: Afternoon Study (1:45 PM)", tag: "ENG", active: true },
+      { id: 2, time: "17:30", title: "Tea Break & Mind Recharge (Relax)", tag: "BREAK", active: true },
+      { id: 3, time: "18:25", title: "5m Alert: Evening Quant Marathon (6:30 PM)", tag: "QUAN", active: true },
+      { id: 4, time: "21:25", title: "5m Alert: Night Wrap & GK (9:30 PM)", tag: "GK", active: true },
+      { id: 5, time: "22:45", title: "Wind Down & Sleep Early for School", tag: "REST", active: true }
+    ];
+
+    const SYLLABUS_DAYS = [
+      { day: 1, phase: "Phase 1: Foundations", date: "14 Oct", s1: "Noun & Pronoun Rules + 30 Qs", s2: "Percentage Basics & Conversion", s3: "Articles 1–51A (FR & Duties)" },
+      { day: 2, phase: "Phase 1: Foundations", date: "15 Oct", s1: "Number Series & Alphabet", s2: "Percentage Tricks & 40 PYQs", s3: "President, PM & Parliament" },
+      { day: 3, phase: "Phase 1: Foundations", date: "16 Oct", s1: "Subject-Verb Agreement Rules", s2: "Ratio & Proportion Concepts", s3: "Constitutional Amendments" },
+      { day: 4, phase: "Phase 1: Foundations", date: "17 Oct", s1: "Coding-Decoding Drills", s2: "Mixture & Alligation Methods", s3: "January 2026 CA (Part 1)" },
+      { day: 5, phase: "Phase 1: Foundations", date: "18 Oct", s1: "Verb, Tenses & Conditionals", s2: "Profit & Loss Part 1", s3: "January 2026 CA (Part 2)" },
+      { day: 6, phase: "Phase 1: Foundations", date: "19 Oct", s1: "Week 1 Error Catchup", s2: "50 Mixed Arithmetic PYQs", s3: "Mock Test 1 (Full 60m)" },
+      { day: 7, phase: "Phase 1: Foundations", date: "20 Oct", s1: "Analogy & Classification", s2: "Profit, Loss & Marked Price (Part 2)", s3: "Indus Valley Civilization & Vedic" },
+      { day: 8, phase: "Phase 1: Foundations", date: "21 Oct", s1: "Adjectives & Adverbs Placement", s2: "Simple Interest Formulas", s3: "Buddhism, Jainism & Maurya" },
+      { day: 9, phase: "Phase 1: Foundations", date: "22 Oct", s1: "Syllogisms Venn Statements", s2: "Compound Interest & SI-CI Hacks", s3: "Delhi Sultanate & Mughal Art" },
+      { day: 14, phase: "Phase 1: Foundations", date: "27 Oct", s1: "Direction & Distance Logic", s2: "Speed, Distance & Time", s3: "Indian River Systems & Dams" },
+      { day: 22, phase: "Phase 1: Foundations", date: "04 Nov", s1: "Direct & Indirect Speech", s2: "Algebra Identities & Formulas", s3: "Biology: Cells & Human Body" },
+      { day: 26, phase: "Phase 2: Advance Drills", date: "08 Nov", s1: "One Word Substitution (150 Qs)", s2: "Geometry: Lines & Triangles", s3: "May 2026 Current Affairs" },
+      { day: 35, phase: "Phase 2: Advance Drills", date: "17 Nov", s1: "Reasoning 25 Qs in 14 min", s2: "Heights and Distances", s3: "August 2026 CA Part 1" },
+      { day: 41, phase: "Phase 3: Final Mocks", date: "23 Nov", s1: "Mock 6 (Strict 60m Test)", s2: "Section Time Management", s3: "Polity & History Rapid Notes" },
+      { day: 47, phase: "Phase 3: Final Mocks", date: "29 Nov", s1: "Calm Mindset Audio Walk", s2: "Zero Math Solving • Relax", s3: "Sleep by 10 PM. You Are Ready!" }
+    ];
+
+    function updateClock() {
+      const now = new Date();
+      let hours = now.getHours();
+      const minutes = now.getMinutes();
+      const seconds = now.getSeconds();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+
+      const displayH = hours % 12 || 12;
+      const hStr = displayH < 10 ? '0' + displayH : '' + displayH;
+      const mStr = minutes < 10 ? '0' + minutes : '' + minutes;
+      const sStr = seconds < 10 ? '0' + seconds : '' + seconds;
+
+      document.getElementById('giantTime').textContent = `${hStr}:${mStr}`;
+      document.getElementById('giantSeconds').textContent = sStr;
+      document.getElementById('giantAmPm').textContent = ampm;
+
+      const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+      const months = ['JANUARY', 'FEBRUARY', 'MARCH', 'APRIL', 'MAY', 'JUNE', 'JULY', 'AUGUST', 'SEPTEMBER', 'OCTOBER', 'NOVEMBER', 'DECEMBER'];
+      document.getElementById('dateDisplay').textContent = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]}`;
+
+      const currentMin = hours * 60 + minutes;
+      let active = null;
+      let next = null;
+
+      for (let s of ROUTINE_SLOTS) {
+        const start = s.startH * 60 + s.startM;
+        const end = s.endH * 60 + s.endM;
+        if (currentMin >= start && currentMin < end) {
+          active = s;
+          break;
+        }
+      }
+
+      if (active) {
+        const end = active.endH * 60 + active.endM;
+        const diff = end - currentMin;
+        const remH = Math.floor(diff / 60);
+        const remM = diff % 60;
+
+        document.getElementById('sessionStatusBadge').textContent = "ACTIVE SESSION";
+        document.getElementById('sessionStatusBadge').className = "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800";
+        document.getElementById('sessionName').textContent = active.name;
+        document.getElementById('sessionTimeWindow').textContent = active.window;
+        document.getElementById('sessionTimeRemainingLabel').textContent = "Ends In";
+        document.getElementById('sessionCountdown').textContent = `${remH > 0 ? remH + 'h ' : ''}${remM}m`;
+        document.getElementById('topSlotText').textContent = `Active: ${active.tag}`;
+      } else {
+        for (let s of ROUTINE_SLOTS) {
+          const start = s.startH * 60 + s.startM;
+          if (start > currentMin) {
+            next = s;
+            break;
+          }
+        }
+        if (!next) next = ROUTINE_SLOTS[0];
+
+        let diff = (next.startH * 60 + next.startM) - currentMin;
+        if (diff < 0) diff += 24 * 60;
+        const remH = Math.floor(diff / 60);
+        const remM = diff % 60;
+
+        document.getElementById('sessionStatusBadge').textContent = "UPCOMING SESSION";
+        document.getElementById('sessionStatusBadge').className = "text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700";
+        document.getElementById('sessionName').textContent = next.name;
+        document.getElementById('sessionTimeWindow').textContent = next.window;
+        document.getElementById('sessionTimeRemainingLabel').textContent = "Starts In";
+        document.getElementById('sessionCountdown').textContent = `${remH > 0 ? remH + 'h ' : ''}${remM}m`;
+        document.getElementById('topSlotText').textContent = `Next: ${next.tag}`;
+      }
+
+      const diffExam = EXAM_DATE - now;
+      if (diffExam > 0) {
+        const d = Math.floor(diffExam / (1000 * 60 * 60 * 24));
+        document.getElementById('examDaysCount').textContent = `${d} Days Left`;
+      }
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+
+    // STOPWATCH
+    let swInterval = null;
+    let swStartTime = 0;
+    let swElapsedTime = 0;
+    let swRunning = false;
+    let swCountdownTotal = 0;
+    let swLaps = [];
+    let lastLapElapsed = 0;
+
+    function formatTime(ms) {
+      const totSec = Math.floor(ms / 1000);
+      const m = Math.floor(totSec / 60);
+      const s = totSec % 60;
+      const c = Math.floor((ms % 1000) / 10);
+      return `${m < 10 ? '0' + m : m}:${s < 10 ? '0' + s : s}.${c < 10 ? '0' + c : c}`;
+    }
+
+    function runStopwatch() {
+      const delta = performance.now() - swStartTime;
+      const curr = swElapsedTime + delta;
+
+      if (swCountdownTotal > 0) {
+        const rem = swCountdownTotal - curr;
+        if (rem <= 0) {
+          clearInterval(swInterval);
+          swRunning = false;
+          document.getElementById('swTimerText').textContent = "00:00.00";
+          document.getElementById('swStartBtn').innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Start';
+          AudioEngine.alarm();
+          lucide.createIcons();
+          return;
+        }
+        document.getElementById('swTimerText').textContent = formatTime(rem);
+      } else {
+        document.getElementById('swTimerText').textContent = formatTime(curr);
+      }
+    }
+
+    document.getElementById('swStartBtn').addEventListener('click', () => {
+      AudioEngine.tick();
+      if (!swRunning) {
+        swRunning = true;
+        swStartTime = performance.now();
+        swInterval = setInterval(runStopwatch, 30);
+        document.getElementById('swStartBtn').innerHTML = '<i data-lucide="pause" class="w-4 h-4"></i> Pause';
+        document.getElementById('swStartBtn').classList.replace('bg-emerald-600', 'bg-amber-600');
+        document.getElementById('swLapBtn').disabled = false;
+      } else {
+        swRunning = false;
+        clearInterval(swInterval);
+        swElapsedTime += performance.now() - swStartTime;
+        document.getElementById('swStartBtn').innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Resume';
+        document.getElementById('swStartBtn').classList.replace('bg-amber-600', 'bg-emerald-600');
+      }
+      lucide.createIcons();
+    });
+
+    document.getElementById('swLapBtn').addEventListener('click', () => {
+      if (!swRunning) return;
+      AudioEngine.lap();
+      const curr = swElapsedTime + (performance.now() - swStartTime);
+      const lapTime = curr - lastLapElapsed;
+      lastLapElapsed = curr;
+
+      swLaps.unshift({ num: swLaps.length + 1, lapTime, total: curr });
+      document.getElementById('swQCount').textContent = swLaps.length;
+      const avg = Math.round((curr / 1000 / swLaps.length) * 10) / 10;
+      document.getElementById('swAvgPace').textContent = `${avg} s/q`;
+
+      document.getElementById('swLapsList').innerHTML = swLaps.map(l => `
+        <div class="flex items-center justify-between py-1 border-b border-slate-900 last:border-none">
+          <span class="text-slate-400">Question #${l.num}</span>
+          <span class="text-orange-400 font-bold">+${(l.lapTime / 1000).toFixed(1)}s</span>
+          <span class="text-white">${formatTime(l.total)}</span>
+        </div>
+      `).join('');
+    });
+
+    document.getElementById('swResetBtn').addEventListener('click', () => {
+      AudioEngine.tick();
+      clearInterval(swInterval);
+      swRunning = false;
+      swElapsedTime = 0;
+      swCountdownTotal = 0;
+      swLaps = [];
+      lastLapElapsed = 0;
+      document.getElementById('swTimerText').textContent = "00:00.00";
+      document.getElementById('swModeName').textContent = "Free Stopwatch";
+      document.getElementById('swStartBtn').innerHTML = '<i data-lucide="play" class="w-4 h-4"></i> Start';
+      document.getElementById('swStartBtn').classList.replace('bg-amber-600', 'bg-emerald-600');
+      document.getElementById('swLapBtn').disabled = true;
+      document.getElementById('swQCount').textContent = "0";
+      document.getElementById('swAvgPace').textContent = "-- s/q";
+      document.getElementById('swLapsList').innerHTML = '<div class="text-slate-500 text-center py-2">Tap "+1 Question" during your mock to log per-question pace.</div>';
+      lucide.createIcons();
+    });
+
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        AudioEngine.tick();
+        const sec = parseInt(btn.getAttribute('data-sec'));
+        const name = btn.getAttribute('data-name');
+        document.getElementById('swResetBtn').click();
+        swCountdownTotal = sec * 1000;
+        document.getElementById('swModeName').textContent = name;
+        document.getElementById('swTimerText').textContent = formatTime(swCountdownTotal);
+      });
+    });
+
+    // ALARMS
+    function renderAlarms() {
+      const container = document.getElementById('alarmItemsContainer');
+      container.innerHTML = alarms.map(a => `
+        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-xs">
+          <div class="flex items-center gap-3">
+            <span class="font-mono text-lg font-bold text-orange-400">${a.time}</span>
+            <div>
+              <h4 class="font-semibold text-white text-sm">${a.title}</h4>
+              <span class="text-[9px] uppercase font-mono px-1.5 py-0.2 rounded bg-slate-800 text-slate-400 border border-slate-700">${a.tag}</span>
+            </div>
+          </div>
+          <button class="toggle-alarm p-2 rounded-xl border border-slate-700 ${a.active ? 'bg-emerald-950 text-emerald-400 border-emerald-800' : 'bg-slate-800 text-slate-500'}" data-id="${a.id}">
+            <i data-lucide="${a.active ? 'bell' : 'bell-off'}" class="w-4 h-4"></i>
+          </button>
+        </div>
+      `).join('');
+      lucide.createIcons();
+    }
+
+    document.getElementById('alarmItemsContainer').addEventListener('click', (e) => {
+      const btn = e.target.closest('.toggle-alarm');
+      if (!btn) return;
+      const id = parseInt(btn.getAttribute('data-id'));
+      const alarm = alarms.find(a => a.id === id);
+      if (alarm) {
+        alarm.active = !alarm.active;
+        AudioEngine.tick();
+        renderAlarms();
+      }
+    });
+
+    const modal = document.getElementById('newAlarmModal');
+    document.getElementById('openNewAlarmBtn').addEventListener('click', () => {
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    });
+    document.getElementById('closeAlarmModal').addEventListener('click', () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    });
+    document.getElementById('cancelAlarmModal').addEventListener('click', () => {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    });
+
+    document.getElementById('saveAlarmBtn').addEventListener('click', () => {
+      const title = document.getElementById('alarmTitleInput').value.trim() || "Study Session";
+      const time = document.getElementById('alarmTimeInput').value || "18:25";
+      const tag = document.getElementById('alarmTagInput').value;
+      alarms.push({ id: Date.now(), time, title, tag, active: true });
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      AudioEngine.alarm();
+      renderAlarms();
+    });
+
+    renderAlarms();
+
+    // 47-DAY PLANNER
+    let planIdx = 6;
+    function renderPlanDay() {
+      const item = SYLLABUS_DAYS[planIdx] || SYLLABUS_DAYS[0];
+      document.getElementById('planPhaseTitle').textContent = item.phase;
+      document.getElementById('planDayTitle').textContent = `Day ${item.day} (${item.date})`;
+      document.getElementById('planSlot1Title').textContent = item.s1;
+      document.getElementById('planSlot2Title').textContent = item.s2;
+      document.getElementById('planSlot3Title').textContent = item.s3;
+    }
+
+    document.getElementById('planPrevBtn').addEventListener('click', () => {
+      AudioEngine.tick();
+      if (planIdx > 0) planIdx--;
+      renderPlanDay();
+    });
+    document.getElementById('planNextBtn').addEventListener('click', () => {
+      AudioEngine.tick();
+      if (planIdx < SYLLABUS_DAYS.length - 1) planIdx++;
+      renderPlanDay();
+    });
+    renderPlanDay();
+
+    // NAVIGATION
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        AudioEngine.tick();
+        const target = btn.getAttribute('data-target');
+
+        document.querySelectorAll('.nav-btn').forEach(b => {
+          b.classList.remove('active', 'text-orange-400');
+          b.classList.add('text-slate-400');
+        });
+        btn.classList.add('active', 'text-orange-400');
+        btn.classList.remove('text-slate-400');
+
+        document.querySelectorAll('.view-panel').forEach(p => {
+          if (p.id === target) {
+            p.classList.remove('hidden');
+            p.classList.add('flex');
+          } else {
+            p.classList.add('hidden');
+            p.classList.remove('flex');
+          }
+        });
+        lucide.createIcons();
+      });
+    });
+
+    // FULLSCREEN & SOUND
+    document.getElementById('fullscreenToggleBtn').addEventListener('click', () => {
+      AudioEngine.tick();
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    });
+
+    const soundBtn = document.getElementById('soundToggleBtn');
+    soundBtn.addEventListener('click', () => {
+      AudioEngine.muted = !AudioEngine.muted;
+      const icon = document.getElementById('soundIcon');
+      const text = document.getElementById('soundStatusText');
+      if (AudioEngine.muted) {
+        icon.setAttribute('data-lucide', 'volume-x');
+        icon.classList.replace('text-emerald-400', 'text-slate-500');
+        text.textContent = "Muted";
+      } else {
+        icon.setAttribute('data-lucide', 'volume-2');
+        icon.classList.replace('text-slate-500', 'text-emerald-400');
+        text.textContent = "Sound On";
+        AudioEngine.tick();
+      }
+      lucide.createIcons();
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
